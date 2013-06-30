@@ -1,0 +1,60 @@
+<element name="whiteboard-canvas" attributes="paths">
+    <template>
+        <canvas id="surface" touch-action="none"></canvas>
+    </template>
+    <script>
+        Polymer.register(this, {
+            paths: [],
+            ready: function(){
+                var self = this;
+                this.paths = new Array();
+                var ctx = this.$.surface.getContext("2d");
+                ctx.canvas.width  = window.innerWidth;
+                ctx.canvas.height = window.innerHeight;
+                ctx.strokeStyle = "black";
+                ctx.fillStyle = "black";
+                
+                function onpointmove(evt){
+                    console.log(evt);
+                    self.draw(evt.offsetX, evt.offsetY);
+                }
+                
+                function onpointup(evt){
+                    self.$.surface.removeEventListener('pointermove', onpointmove, false);
+                    self.$.surface.removeEventListener('pointerup', onpointup, false);
+                    var event = new CustomEvent("drawend", {"detail":{}});
+                    self.dispatchEvent(event);
+                }
+                
+                this.$.surface.addEventListener('pointerdown', function onpointdown(evt){
+                    self.drawStart(evt.offsetX, evt.offsetY);
+                    self.$.surface.addEventListener('pointerup', onpointup, false);
+                    self.$.surface.addEventListener('pointermove', onpointmove, false);
+                }, false);
+                
+                this.addEventListener('draw', function(evt){console.log(evt.detail);}, false);
+            },
+            drawStart: function(x,y, silent){
+                var ctx = this.$.surface.getContext("2d");
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                this.paths.push([{x:x, y:y}]);
+                if(silent === undefined || !silent){
+                    var event = new CustomEvent("drawstart", {"detail":{"x":x, "y":y}});
+                    this.dispatchEvent(event)
+                }
+            },
+            draw: function(x,y, silent){
+                var ctx = this.$.surface.getContext("2d");
+                ctx.lineTo(x, y);
+                ctx.stroke();
+                this.paths[this.paths.length-1].push({x:x, y:y});
+                if(silent === undefined || !silent){
+                    var event = new CustomEvent("draw", {"detail":{"x":x, "y":y}});
+                    this.dispatchEvent(event)
+                }
+            },
+            
+        });
+    </script>
+</element>
